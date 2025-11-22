@@ -1,0 +1,8 @@
+---
+- name: Reboot system
+  ansible.builtin.reboot:
+    msg: "Rebooting system to apply changes..."
+    connect_timeout: 5
+    reboot_timeout: 600
+  become: true
+  when: upgrade_reboot

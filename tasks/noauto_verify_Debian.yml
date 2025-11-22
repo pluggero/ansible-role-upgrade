@@ -1,0 +1,62 @@
+---
+- name: Check if any packages need upgrading
+  ansible.builtin.apt:
+    upgrade: dist
+    update_cache: false
+  check_mode: true
+  register: apt_upgrade_check
+  become: true
+
+- name: Set fact for packages needing upgrade
+  ansible.builtin.set_fact:
+    packages_needed_upgrade: "{{ apt_upgrade_check.changed | default(false) }}"
+
+- name: Parse last upgrade timestamp from apt history
+  ansible.builtin.shell: |
+    set -o pipefail
+    grep "^Start-Date:" /var/log/apt/history.log | tail -1 | sed 's/Start-Date: //'
+  args:
+    executable: /bin/bash
+  register: upgrade_apt_last_start
+  changed_when: false
+  when: packages_needed_upgrade
+
+- name: Get current time and last upgrade time in epoch
+  ansible.builtin.shell: |
+    echo "$(date +%s) $(date -d "{{ upgrade_apt_last_start.stdout }}" +%s)"
+  register: upgrade_apt_times
+  changed_when: false
+  when:
+    - packages_needed_upgrade
+    - upgrade_apt_last_start.stdout | length > 0
+
+- name: Calculate time since last upgrade
+  ansible.builtin.set_fact:
+    upgrade_apt_seconds_ago: "{{ (upgrade_apt_times.stdout.split()[0] | int) - (upgrade_apt_times.stdout.split()[1] | int) }}"
+  when:
+    - packages_needed_upgrade
+    - upgrade_apt_times.stdout is defined
+
+- name: Assert upgrade ran within last 5 minutes
+  ansible.builtin.assert:
+    that:
+      - upgrade_apt_last_start.stdout | length > 0
+      - upgrade_apt_seconds_ago | int < 300
+    fail_msg: "Last apt upgrade was {{ (upgrade_apt_seconds_ago | int / 60) | round(1) }} minutes ago (expected less than 5 minutes)"
+  when: packages_needed_upgrade
+
+- name: Report system already up-to-date
+  ansible.builtin.debug:
+    msg: "System is already up-to-date, skipping timestamp verification"
+  when: not packages_needed_upgrade
+
+- name: Check for broken packages
+  ansible.builtin.command: dpkg --audit
+  register: dpkg_audit
+  changed_when: false
+
+- name: Assert no broken packages
+  ansible.builtin.assert:
+    that:
+      - dpkg_audit.stdout == ""
+    fail_msg: "Found broken packages: {{ dpkg_audit.stdout }}"

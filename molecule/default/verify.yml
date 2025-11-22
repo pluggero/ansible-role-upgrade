@@ -1,0 +1,28 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Include OS-specific verification
+      ansible.builtin.include_tasks: "{{ task_file }}"
+      with_first_found:
+        - files:
+            - "{{ playbook_dir }}/../../tasks/noauto_verify_{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
+            - "{{ playbook_dir }}/../../tasks/noauto_verify_{{ ansible_os_family }}-{{ ansible_distribution_major_version }}.yml"
+            - "{{ playbook_dir }}/../../tasks/noauto_verify_{{ ansible_distribution }}.yml"
+            - "{{ playbook_dir }}/../../tasks/noauto_verify_{{ ansible_os_family }}.yml"
+            - "{{ playbook_dir }}/../../tasks/noauto_verify_{{ ansible_lsb.id }}.yml"
+      loop_control:
+        loop_var: task_file
+
+    - name: Verify package manager is functional
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Assert package facts were gathered
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.packages is defined
+          - ansible_facts.packages | length > 0
+        fail_msg: "Package manager is not functional"

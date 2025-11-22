@@ -1,0 +1,7 @@
+---
+upgrade_reboot: false
+
+# APT-specific (Debian/Ubuntu)
+upgrade_apt_autoremove: false
+upgrade_apt_type: dist
+upgrade_apt_cache_valid_time: 1

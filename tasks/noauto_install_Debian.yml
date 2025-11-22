@@ -1,0 +1,25 @@
+---
+- name: Ensure we are using apt
+  ansible.builtin.fail:
+    msg: "This role only supports {{ ansible_os_family }} systems that use apt as a package manager."
+  when: ansible_pkg_mgr != "apt"
+
+- name: Install upgrade via apt
+  block:
+    - name: Install upgrade
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: "{{ upgrade_apt_type }}"
+        cache_valid_time: "{{ upgrade_apt_cache_valid_time }}"
+      notify: Reboot system
+      environment:
+        DEBIAN_FRONTEND: nointeractive
+      become: true
+
+    - name: Autoremove package
+      ansible.builtin.apt:
+        autoremove: true
+      when: upgrade_apt_autoremove
+      environment:
+        DEBIAN_FRONTEND: nointeractive
+      become: true

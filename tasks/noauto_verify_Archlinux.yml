@@ -1,0 +1,53 @@
+---
+- name: Get last pacman full system upgrade timestamp
+  ansible.builtin.shell: |
+    set -o pipefail
+    grep "starting full system upgrade" /var/log/pacman.log | tail -1 | sed 's/\[\([^]]*\)\].*/\1/'
+  args:
+    executable: /bin/bash
+  register: pacman_last_upgrade
+  changed_when: false
+  failed_when: false
+
+- name: Get current time and last upgrade time in epoch
+  ansible.builtin.shell: |
+    echo "$(date +%s) $(date -d "{{ pacman_last_upgrade.stdout }}" +%s)"
+  register: upgrade_pacman_times
+  changed_when: false
+  when: pacman_last_upgrade.stdout | length > 0
+
+- name: Calculate time since last upgrade
+  ansible.builtin.set_fact:
+    upgrade_pacman_seconds_ago: "{{ (upgrade_pacman_times.stdout.split()[0] | int) - (upgrade_pacman_times.stdout.split()[1] | int) }}"
+  when: upgrade_pacman_times.stdout is defined
+
+- name: Assert upgrade ran within last 5 minutes
+  ansible.builtin.assert:
+    that:
+      - pacman_last_upgrade.stdout | length > 0
+      - upgrade_pacman_seconds_ago | int < 300
+    fail_msg: "Last pacman upgrade was {{ (upgrade_pacman_seconds_ago | int / 60) | round(1) }} minutes ago (expected less than 5 minutes)"
+
+- name: Check pacman sync database was updated
+  ansible.builtin.find:
+    paths: /var/lib/pacman/sync
+    patterns: "*.db"
+  register: pacman_sync_db
+
+- name: Assert pacman sync databases exist
+  ansible.builtin.assert:
+    that:
+      - pacman_sync_db.files | length > 0
+    fail_msg: "No pacman sync databases found - upgrade may not have run"
+
+- name: Verify pacman database integrity
+  ansible.builtin.command: pacman -Dk
+  register: pacman_db_check
+  changed_when: false
+  failed_when: false
+
+- name: Assert pacman database is valid
+  ansible.builtin.assert:
+    that:
+      - pacman_db_check.rc == 0
+    fail_msg: "pacman database check failed: {{ pacman_db_check.stderr }}"

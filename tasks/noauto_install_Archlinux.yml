@@ -1,0 +1,12 @@
+---
+- name: Ensure we are using pacman
+  ansible.builtin.fail:
+    msg: "This role only supports {{ ansible_os_family }} systems that use pacman as a package manager."
+  when: ansible_pkg_mgr != "pacman"
+
+- name: Install upgrade via pacman
+  community.general.pacman:
+    update_cache: true
+    upgrade: true
+  become: true
+  notify: Reboot system
