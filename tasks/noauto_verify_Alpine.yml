@@ -1,0 +1,51 @@
+---
+- name: Check if any packages need upgrading
+  community.general.apk:
+    upgrade: true
+    update_cache: false
+  check_mode: true
+  register: apk_upgrade_check
+  become: true
+
+- name: Set fact for packages needing upgrade
+  ansible.builtin.set_fact:
+    packages_needed_upgrade: "{{ apk_upgrade_check.changed | default(false) }}"
+
+- name: Parse last upgrade timestamp from apk log
+  ansible.builtin.shell: |
+    set -o pipefail
+    grep -E "upgraded|installed" /var/log/apk.log | tail -1 | awk '{print $1, $2}'
+  args:
+    executable: /bin/sh
+  register: upgrade_apk_last_start
+  changed_when: false
+  when: packages_needed_upgrade
+
+- name: Get current time and last upgrade time in epoch
+  ansible.builtin.shell: |
+    echo "$(date +%s) $(date -d "{{ upgrade_apk_last_start.stdout }}" +%s)"
+  register: upgrade_apk_times
+  changed_when: false
+  when:
+    - packages_needed_upgrade
+    - upgrade_apk_last_start.stdout | length > 0
+
+- name: Calculate time since last upgrade
+  ansible.builtin.set_fact:
+    upgrade_apk_seconds_ago: "{{ (upgrade_apk_times.stdout.split()[0] | int) - (upgrade_apk_times.stdout.split()[1] | int) }}"
+  when:
+    - packages_needed_upgrade
+    - upgrade_apk_times.stdout is defined
+
+- name: Assert upgrade ran within last 5 minutes
+  ansible.builtin.assert:
+    that:
+      - upgrade_apk_last_start.stdout | length > 0
+      - upgrade_apk_seconds_ago | int < 300
+    fail_msg: "Last apk upgrade was {{ (upgrade_apk_seconds_ago | int / 60) | round(1) }} minutes ago (expected less than 5 minutes)"
+  when: packages_needed_upgrade
+
+- name: Report system already up-to-date
+  ansible.builtin.debug:
+    msg: "System is already up-to-date, skipping timestamp verification"
+  when: not packages_needed_upgrade

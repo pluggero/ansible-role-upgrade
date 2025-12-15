@@ -19,5 +19,8 @@ galaxy_info:
     - name: Ubuntu
       versions:
         - noble
+    - name: Alpine
+      versions:
+        - all
 
   galaxy_tags: []
