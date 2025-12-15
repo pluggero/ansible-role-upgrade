@@ -1,0 +1,12 @@
+---
+- name: Ensure we are using apk
+  ansible.builtin.fail:
+    msg: "This role only supports {{ ansible_os_family }} systems that use apk as a package manager."
+  when: ansible_pkg_mgr != "apk"
+
+- name: Install upgrade via apk
+  community.general.apk:
+    update_cache: true
+    upgrade: true
+  become: true
+  notify: Reboot system

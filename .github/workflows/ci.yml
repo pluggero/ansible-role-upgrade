@@ -50,6 +50,7 @@ jobs:
           - debian12
           - archlinux
           - ubuntu2404
+          - alpinelinux
 
     steps:
       - name: Check out the codebase
