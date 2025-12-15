@@ -1,0 +1,15 @@
+---
+- name: Ensure we are using dnf or yum
+  ansible.builtin.fail:
+    msg: "This role only supports {{ ansible_os_family }} systems that use dnf or yum as a package manager."
+  when: ansible_pkg_mgr not in ["dnf", "yum"]
+
+- name: Install upgrade via dnf/yum
+  ansible.builtin.dnf:
+    name: "*"
+    state: latest
+    update_cache: true
+  become: true
+  notify: Reboot system
+  tags:
+    - skip_ansible_lint
