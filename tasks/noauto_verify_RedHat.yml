@@ -1,0 +1,54 @@
+---
+- name: Check if any packages need upgrading
+  ansible.builtin.dnf:
+    name: "*"
+    state: latest
+    update_cache: false
+  check_mode: true
+  register: dnf_upgrade_check
+  become: true
+  tags:
+    - skip_ansible_lint
+
+- name: Set fact for packages needing upgrade
+  ansible.builtin.set_fact:
+    packages_needed_upgrade: "{{ dnf_upgrade_check.changed | default(false) }}"
+
+- name: Parse last upgrade timestamp from dnf log
+  ansible.builtin.shell: |
+    set -o pipefail
+    grep -E "Updated:|Installed:" /var/log/dnf.log /var/log/yum.log 2>/dev/null | tail -1 | awk '{print $1, $2}'
+  args:
+    executable: /bin/bash
+  register: upgrade_dnf_last_start
+  changed_when: false
+  when: packages_needed_upgrade
+
+- name: Get current time and last upgrade time in epoch
+  ansible.builtin.shell: |
+    echo "$(date +%s) $(date -d "{{ upgrade_dnf_last_start.stdout }}" +%s)"
+  register: upgrade_dnf_times
+  changed_when: false
+  when:
+    - packages_needed_upgrade
+    - upgrade_dnf_last_start.stdout | length > 0
+
+- name: Calculate time since last upgrade
+  ansible.builtin.set_fact:
+    upgrade_dnf_seconds_ago: "{{ (upgrade_dnf_times.stdout.split()[0] | int) - (upgrade_dnf_times.stdout.split()[1] | int) }}"
+  when:
+    - packages_needed_upgrade
+    - upgrade_dnf_times.stdout is defined
+
+- name: Assert upgrade ran within last 5 minutes
+  ansible.builtin.assert:
+    that:
+      - upgrade_dnf_last_start.stdout | length > 0
+      - upgrade_dnf_seconds_ago | int < 300
+    fail_msg: "Last dnf/yum upgrade was {{ (upgrade_dnf_seconds_ago | int / 60) | round(1) }} minutes ago (expected less than 5 minutes)"
+  when: packages_needed_upgrade
+
+- name: Report system already up-to-date
+  ansible.builtin.debug:
+    msg: "System is already up-to-date, skipping timestamp verification"
+  when: not packages_needed_upgrade
