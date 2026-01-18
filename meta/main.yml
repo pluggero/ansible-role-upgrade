@@ -5,7 +5,7 @@ galaxy_info:
   role_name: upgrade
   namespace: pluggero
   author: pluggero
-  description: Installs package upgrades on various Linux distributions.
+  description: Installs package upgrades on various Linux distributions and FreeBSD.
   company: Pluggramming
   license: license (MIT)
   min_ansible_version: "2.10"
@@ -22,5 +22,8 @@ galaxy_info:
     - name: Alpine
       versions:
         - all
+    - name: FreeBSD
+      versions:
+        - "14.3"
 
   galaxy_tags: []
