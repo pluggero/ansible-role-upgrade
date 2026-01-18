@@ -1,0 +1,58 @@
+---
+- name: Check if any packages need upgrading
+  community.general.pkgng:
+    name: "*"
+    state: latest
+  check_mode: true
+  register: pkgng_upgrade_check
+  become: true
+
+- name: Set fact for packages needing upgrade
+  ansible.builtin.set_fact:
+    packages_needed_upgrade: "{{ pkgng_upgrade_check.changed | default(false) }}"
+
+- name: Parse last upgrade timestamp from pkg log
+  ansible.builtin.shell: |
+    set -o pipefail
+    grep -E "upgraded|installed" /var/log/pkg.log | tail -1 | awk '{print $1, $2}'
+  args:
+    executable: /bin/sh
+  register: upgrade_pkgng_last_start
+  changed_when: false
+  when: packages_needed_upgrade
+
+- name: Get current time and last upgrade time in epoch
+  ansible.builtin.shell: |
+    echo "$(date +%s) $(date -j -f "%Y-%m-%d %H:%M:%S" "{{ upgrade_pkgng_last_start.stdout }}" +%s)"
+  register: upgrade_pkgng_times
+  changed_when: false
+  when:
+    - packages_needed_upgrade
+    - upgrade_pkgng_last_start.stdout | length > 0
+
+- name: Calculate time since last upgrade
+  ansible.builtin.set_fact:
+    upgrade_pkgng_seconds_ago: "{{ (upgrade_pkgng_times.stdout.split()[0] | int) - (upgrade_pkgng_times.stdout.split()[1] | int) }}"
+  when:
+    - packages_needed_upgrade
+    - upgrade_pkgng_times.stdout is defined
+
+- name: Assert upgrade ran within last 5 minutes
+  ansible.builtin.assert:
+    that:
+      - upgrade_pkgng_last_start.stdout | length > 0
+      - upgrade_pkgng_seconds_ago | int < 300
+    fail_msg: "Last pkgng upgrade was {{ (upgrade_pkgng_seconds_ago | int / 60) | round(1) }} minutes ago (expected less than 5 minutes)"
+  when: packages_needed_upgrade
+
+- name: Report system already up-to-date
+  ansible.builtin.debug:
+    msg: "System is already up-to-date, skipping timestamp verification"
+  when: not packages_needed_upgrade
+
+- name: Verify package database integrity
+  ansible.builtin.command: pkg check -dsa
+  register: pkg_check
+  changed_when: false
+  failed_when: pkg_check.rc not in [0, 1]
+  become: true

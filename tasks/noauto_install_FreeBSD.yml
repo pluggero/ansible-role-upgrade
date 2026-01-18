@@ -1,0 +1,12 @@
+---
+- name: Ensure we are using pkgng
+  ansible.builtin.fail:
+    msg: "This role only supports {{ ansible_os_family }} systems that use pkgng as a package manager."
+  when: ansible_pkg_mgr != "pkgng"
+
+- name: Install upgrade via pkgng
+  community.general.pkgng:
+    name: "*"
+    state: latest
+  become: true
+  notify: Reboot system
