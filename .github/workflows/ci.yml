@@ -51,6 +51,7 @@ jobs:
           - archlinux
           - ubuntu2404
           - alpinelinux
+          - rockylinux9
 
     steps:
       - name: Check out the codebase
