@@ -3,6 +3,11 @@
   hosts: all
   gather_facts: true
 
+  vars:
+    ansible_user: ansible
+    ansible_password: ansible
+    ansible_become_password: ansible
+
   tasks:
     - name: Include OS-specific verification
       ansible.builtin.include_tasks: "{{ task_file }}"
