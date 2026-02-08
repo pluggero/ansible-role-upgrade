@@ -8,5 +8,6 @@
   community.general.pacman:
     update_cache: true
     upgrade: true
+  changed_when: false # The pacman module currently does not support cache_valid_time.
   become: true
   notify: Reboot system
