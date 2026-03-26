@@ -1,0 +1,62 @@
+---
+# Verify Windows Updates
+- name: Check for pending Windows Updates
+  ansible.windows.win_updates:
+    state: searched
+    category_names: "{{ upgrade_windows_update_categories }}"
+  register: windows_update_check
+
+- name: Set fact for Windows updates needing installation
+  ansible.builtin.set_fact:
+    windows_updates_needed: "{{ windows_update_check.found_update_count | default(0) > 0 }}"
+
+- name: Get Windows Update history
+  ansible.windows.win_shell: |
+    $Session = New-Object -ComObject Microsoft.Update.Session
+    $Searcher = $Session.CreateUpdateSearcher()
+    $HistoryCount = $Searcher.GetTotalHistoryCount()
+    if ($HistoryCount -gt 0) {
+      $History = $Searcher.QueryHistory(0, 1)
+      $LastUpdate = $History | Select-Object -First 1
+      $LastUpdate.Date.ToString("yyyy-MM-dd HH:mm:ss")
+    }
+  register: windows_update_last_time
+  changed_when: false
+  when: windows_updates_needed
+
+- name: Calculate time since last Windows update
+  ansible.builtin.set_fact:
+    windows_update_seconds_ago: "{{ ((ansible_date_time.epoch | int) - (windows_update_last_time.stdout | trim | to_datetime('%Y-%m-%d %H:%M:%S')).strftime('%s') | int) }}"
+  when:
+    - windows_updates_needed
+    - windows_update_last_time.stdout is defined
+    - windows_update_last_time.stdout | trim | length > 0
+
+- name: Assert Windows updates ran within last 10 minutes
+  ansible.builtin.assert:
+    that:
+      - windows_update_last_time.stdout | trim | length > 0
+      - windows_update_seconds_ago | int < 600
+    fail_msg: "Last Windows update was {{ (windows_update_seconds_ago | int / 60) | round(1) }} minutes ago (expected less than 10 minutes)"
+  when:
+    - windows_updates_needed
+    - windows_update_seconds_ago is defined
+
+- name: Report Windows system already up-to-date
+  ansible.builtin.debug:
+    msg: "Windows system is already up-to-date, skipping timestamp verification"
+  when: not windows_updates_needed
+
+# Verify Chocolatey
+- name: Check outdated Chocolatey packages
+  ansible.windows.win_shell: |
+    choco outdated --limit-output
+  register: choco_outdated_check
+  changed_when: false
+  failed_when: false
+
+- name: Assert no outdated Chocolatey packages
+  ansible.builtin.assert:
+    that:
+      - choco_outdated_check.stdout_lines | length == 0
+    fail_msg: "Found {{ choco_outdated_check.stdout_lines | length }} outdated Chocolatey packages"

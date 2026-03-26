@@ -5,3 +5,10 @@ upgrade_reboot: false
 upgrade_apt_autoremove: false
 upgrade_apt_type: dist
 upgrade_apt_cache_valid_time: 1
+
+# Windows-specific
+upgrade_windows_update_categories:
+  - CriticalUpdates
+  - SecurityUpdates
+  - UpdateRollups
+  - DefinitionUpdates

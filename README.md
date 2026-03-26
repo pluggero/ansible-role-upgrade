@@ -2,11 +2,14 @@
 
 [![CI](https://github.com/pluggero/ansible-role-upgrade/actions/workflows/ci.yml/badge.svg)](https://github.com/pluggero/ansible-role-upgrade/actions/workflows/ci.yml) [![Ansible Galaxy downloads](https://img.shields.io/ansible/role/d/pluggero/upgrade?label=Galaxy%20downloads&logo=ansible&color=%23096598)](https://galaxy.ansible.com/ui/standalone/roles/pluggero/upgrade)
 
-An Ansible Role that performs a system upgrade.
+An Ansible Role that performs a system upgrade on Linux, FreeBSD, and Windows.
 
 ## Requirements
 
-None.
+Collections:
+- `community.general`
+- `ansible.windows`
+- `chocolatey.chocolatey`
 
 ## Role Variables
 
@@ -23,6 +26,10 @@ Available variables are listed below, along with default values (see `defaults/m
 `upgrade_apt_type` (default: `dist`) - Upgrade type
 
 `upgrade_apt_cache_valid_time` (default: `1`) - Cache validity in seconds
+
+**Windows:**
+
+`upgrade_windows_update_categories` (default: `['CriticalUpdates', 'SecurityUpdates', 'UpdateRollups', 'DefinitionUpdates']`) - Categories of Windows updates to install
 
 ## Dependencies
 

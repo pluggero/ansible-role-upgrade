@@ -14,3 +14,7 @@ provisioner:
   name: ansible
   playbooks:
     converge: ${MOLECULE_PLAYBOOK:-converge.yml}
+  inventory:
+    group_vars:
+      all:
+        ansible_connection: ${MOLECULE_ANSIBLE_CONNECTION:-ssh}

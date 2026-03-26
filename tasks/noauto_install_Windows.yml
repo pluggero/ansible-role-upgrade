@@ -1,0 +1,30 @@
+---
+- name: Ensure we are on Windows
+  ansible.builtin.fail:
+    msg: "This role only supports Windows operating systems."
+  when: ansible_os_family != "Windows"
+
+- name: Install Windows Updates
+  block:
+    - name: Install Windows Updates via win_updates
+      ansible.windows.win_updates:
+        category_names: "{{ upgrade_windows_update_categories }}"
+        state: installed
+        reboot: "{{ upgrade_reboot }}"
+      register: windows_update_result
+      notify: Reboot system
+      become: true
+      become_method: ansible.builtin.runas
+      become_user: SYSTEM
+
+- name: Upgrade Chocolatey packages
+  block:
+    - name: Upgrade all Chocolatey packages
+      chocolatey.chocolatey.win_chocolatey:
+        name: all
+        state: latest
+      register: chocolatey_result
+      notify: Reboot system
+      become: true
+      become_method: ansible.builtin.runas
+      become_user: SYSTEM

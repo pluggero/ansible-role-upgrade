@@ -1,6 +1,8 @@
 ---
 collections:
   - community.general
+  - ansible.windows
+  - chocolatey.chocolatey
 roles:
   - name: pluggero.rustup
     version: 1.6.0
