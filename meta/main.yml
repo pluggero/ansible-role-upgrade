@@ -25,5 +25,8 @@ galaxy_info:
     - name: FreeBSD
       versions:
         - "14.0"
+    - name: Windows
+      versions:
+        - all
 
   galaxy_tags: []
