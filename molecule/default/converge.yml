@@ -1,11 +1,5 @@
 ---
 - name: Converge
   hosts: all
-
-  vars:
-    ansible_user: ansible
-    ansible_password: ansible
-    ansible_become_password: ansible
-
   roles:
     - role: pluggero.upgrade

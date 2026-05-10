@@ -24,6 +24,7 @@
     - name: Verify package manager is functional
       ansible.builtin.package_facts:
         manager: auto
+      when: ansible_os_family != 'Windows'
 
     - name: Assert package facts were gathered
       ansible.builtin.assert:
@@ -31,3 +32,4 @@
           - ansible_facts.packages is defined
           - ansible_facts.packages | length > 0
         fail_msg: "Package manager is not functional"
+      when: ansible_os_family != 'Windows'
