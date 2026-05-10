@@ -6,6 +6,24 @@
 
 - name: Install Windows Updates
   block:
+    - name: Reset Windows Update components
+      ansible.windows.win_powershell:
+        script: |
+          $services = @('wuauserv', 'cryptSvc', 'bits', 'msiserver')
+          $services | ForEach-Object { Stop-Service -Name $_ -Force -ErrorAction SilentlyContinue }
+
+          Remove-Item 'C:\Windows\SoftwareDistribution\Download' -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item 'C:\Windows\System32\catroot2' -Recurse -Force -ErrorAction SilentlyContinue
+
+          @('wuapi.dll', 'wups.dll', 'wups2.dll', 'qmgr.dll', 'qmgrprxy.dll') | ForEach-Object {
+            & regsvr32.exe /s $_
+          }
+
+          $services | ForEach-Object { Start-Service -Name $_ -ErrorAction SilentlyContinue }
+      become: true
+      become_method: ansible.builtin.runas
+      become_user: SYSTEM
+
     - name: Install Windows Updates via win_updates
       ansible.windows.win_updates:
         category_names: "{{ upgrade_windows_update_categories }}"
