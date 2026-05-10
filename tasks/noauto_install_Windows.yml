@@ -29,11 +29,9 @@
         category_names: "{{ upgrade_windows_update_categories }}"
         state: installed
         reboot: "{{ upgrade_reboot }}"
+        reboot_timeout: 1200
       register: windows_update_result
       notify: Reboot system
-      become: true
-      become_method: ansible.builtin.runas
-      become_user: SYSTEM
       retries: "{{ upgrade_windows_update_retries }}"
       delay: "{{ upgrade_windows_update_retry_delay }}"
       until: windows_update_result is not failed

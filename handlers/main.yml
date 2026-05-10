@@ -2,8 +2,8 @@
 - name: Reboot system
   ansible.builtin.reboot:
     msg: "Rebooting system to apply changes..."
-    connect_timeout: 5
-    reboot_timeout: 600
+    connect_timeout: 10
+    reboot_timeout: 1200
   become: true
   when:
     - upgrade_reboot
@@ -12,8 +12,8 @@
 - name: Reboot system
   ansible.windows.win_reboot:
     msg: "Rebooting system to apply changes..."
-    connect_timeout: 5
-    reboot_timeout: 600
+    connect_timeout: 10
+    reboot_timeout: 1200
   when:
     - upgrade_reboot
     - ansible_os_family == "Windows"
