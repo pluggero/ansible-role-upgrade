@@ -6,20 +6,94 @@
 
 - name: Install Windows Updates
   block:
-    - name: Reset Windows Update components
+    - name: Query wuauserv startup type before reset
+      ansible.windows.win_service_info:
+        name: wuauserv
+      register: wuauserv_info
+      become: true
+      become_method: ansible.builtin.runas
+      become_user: SYSTEM
+
+    - name: Stop Windows Update related services
+      ansible.windows.win_service:
+        name: "{{ item }}"
+        state: stopped
+        force_dependent_services: true
+      loop:
+        - wuauserv
+        - cryptSvc
+        - bits
+        - msiserver
+      failed_when: false
+      become: true
+      become_method: ansible.builtin.runas
+      become_user: SYSTEM
+
+    - name: Clear Windows Update cache directories
       ansible.windows.win_powershell:
         script: |
-          $services = @('wuauserv', 'cryptSvc', 'bits', 'msiserver')
-          $services | ForEach-Object { Stop-Service -Name $_ -Force -ErrorAction SilentlyContinue }
-
-          Remove-Item 'C:\Windows\SoftwareDistribution\Download' -Recurse -Force -ErrorAction SilentlyContinue
-          Remove-Item 'C:\Windows\System32\catroot2' -Recurse -Force -ErrorAction SilentlyContinue
-
-          @('wuapi.dll', 'wups.dll', 'wups2.dll', 'qmgr.dll', 'qmgrprxy.dll') | ForEach-Object {
-            & regsvr32.exe /s $_
+          $errors = @()
+          $paths = @(
+            'C:\Windows\SoftwareDistribution\Download',
+            'C:\Windows\System32\catroot2'
+          )
+          foreach ($path in $paths) {
+            if (Test-Path $path) {
+              try {
+                Remove-Item $path -Recurse -Force -ErrorAction Stop
+              } catch {
+                $errors += "Failed to remove ${path}: $_"
+              }
+            }
           }
+          if ($errors.Count -gt 0) {
+            $Ansible.Failed = $true
+            $Ansible.Result.errors = $errors
+          }
+      changed_when: true
+      become: true
+      become_method: ansible.builtin.runas
+      become_user: SYSTEM
 
-          $services | ForEach-Object { Start-Service -Name $_ -ErrorAction SilentlyContinue }
+    - name: Re-register Windows Update DLLs
+      ansible.windows.win_powershell:
+        script: |
+          $errors = @()
+          $dlls = @('wuapi.dll', 'wups.dll', 'wups2.dll', 'qmgr.dll', 'qmgrprxy.dll')
+          foreach ($dll in $dlls) {
+            & regsvr32.exe /s $dll
+            if ($LASTEXITCODE -ne 0) {
+              $errors += "regsvr32 failed for ${dll} with exit code ${LASTEXITCODE}"
+            }
+          }
+          if ($errors.Count -gt 0) {
+            $Ansible.Failed = $true
+            $Ansible.Result.errors = $errors
+          }
+      changed_when: true
+      become: true
+      become_method: ansible.builtin.runas
+      become_user: SYSTEM
+
+    - name: Enable wuauserv startup type if it was disabled
+      ansible.windows.win_service:
+        name: wuauserv
+        start_mode: manual
+      when: wuauserv_info.services[0].start_mode == 'disabled'
+      become: true
+      become_method: ansible.builtin.runas
+      become_user: SYSTEM
+
+    - name: Start Windows Update related services
+      ansible.windows.win_service:
+        name: "{{ item }}"
+        state: started
+      loop:
+        - wuauserv
+        - cryptSvc
+        - bits
+        - msiserver
+      failed_when: false
       become: true
       become_method: ansible.builtin.runas
       become_user: SYSTEM
@@ -35,6 +109,16 @@
       retries: "{{ upgrade_windows_update_retries }}"
       delay: "{{ upgrade_windows_update_retry_delay }}"
       until: windows_update_result is not failed
+
+    - name: Restore wuauserv to disabled state
+      ansible.windows.win_service:
+        name: wuauserv
+        start_mode: disabled
+        state: stopped
+      when: wuauserv_info.services[0].start_mode == 'disabled'
+      become: true
+      become_method: ansible.builtin.runas
+      become_user: SYSTEM
 
 - name: Upgrade Chocolatey packages
   block:

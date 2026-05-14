@@ -70,13 +70,13 @@ jobs:
           # of vagrant (which only checks SSH once at boot and does not wait for full system startup).
           # vm.communicator=:none and the custom wait_for in create.yml handle
           # SSH readiness polling instead.
-          # - molecule_distro: windows11
-          #   molecule_os_family: "windows"
-          #   molecule_box_version: "2026.04.06"
-          #   molecule_shell: "powershell"
-          #   molecule_memory: 4096
-          #   molecule_vm_communicator: ":none"
-          #   vagrant_experimental: "none_communicator"
+          - molecule_distro: windows11
+            molecule_os_family: "windows"
+            molecule_box_version: "2026.04.06"
+            molecule_shell: "powershell"
+            molecule_memory: 4096
+            molecule_vm_communicator: ":none"
+            vagrant_experimental: "none_communicator"
 
     env:
       VBOX_VERSION: "7.2.6"
