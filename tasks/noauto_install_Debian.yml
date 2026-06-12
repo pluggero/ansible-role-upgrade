@@ -4,6 +4,38 @@
     msg: "This role only supports {{ ansible_os_family }} systems that use apt as a package manager."
   when: ansible_pkg_mgr != "apt"
 
+# grub-pc postinst queries debconf for the install device; without a pre-seeded
+# value, DEBIAN_FRONTEND=noninteractive still blocks and dpkg exits with code 1.
+- name: Pre-seed grub-pc debconf to prevent interactive prompt during upgrade
+  block:
+    # dpkg-query exits 1 when the package is absent (e.g. EFI-only hosts) — must not abort.
+    - name: Check if grub-pc is installed
+      ansible.builtin.command: dpkg-query -W -f='${Status}' grub-pc
+      register: upgrade_grub_pc_status
+      changed_when: false
+      failed_when: false
+      become: true
+
+    # grub-probe --target=disk returns the whole-disk device (/dev/sda, not /dev/sda1)
+    # that grub-pc/install_devices expects.
+    - name: Detect boot device for grub-pc pre-seeding
+      ansible.builtin.command: grub-probe --target=disk /boot
+      register: upgrade_grub_boot_device
+      changed_when: false
+      become: true
+      when: "'install ok installed' in upgrade_grub_pc_status.stdout"
+
+    # vtype must match the template type (multiselect); a mismatch causes debconf to
+    # discard the seeded value and re-prompt during the postinst.
+    - name: Pre-seed grub-pc install_devices in debconf
+      ansible.builtin.debconf:
+        name: grub-pc
+        question: grub-pc/install_devices
+        vtype: multiselect
+        value: "{{ upgrade_grub_boot_device.stdout }}"
+      become: true
+      when: "'install ok installed' in upgrade_grub_pc_status.stdout"
+
 - name: Install upgrade via apt
   block:
     - name: Install upgrade
@@ -11,9 +43,10 @@
         update_cache: true
         upgrade: "{{ upgrade_apt_type }}"
         cache_valid_time: "{{ upgrade_apt_cache_valid_time }}"
+        dpkg_options: "{{ upgrade_apt_dpkg_options }}"
       notify: Reboot system
       environment:
-        DEBIAN_FRONTEND: nointeractive
+        DEBIAN_FRONTEND: noninteractive
       become: true
 
     - name: Autoremove package
@@ -21,5 +54,5 @@
         autoremove: true
       when: upgrade_apt_autoremove
       environment:
-        DEBIAN_FRONTEND: nointeractive
+        DEBIAN_FRONTEND: noninteractive
       become: true

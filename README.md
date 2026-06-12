@@ -24,6 +24,8 @@ Available variables are listed below, along with default values (see `defaults/m
 
 `upgrade_apt_cache_valid_time` (default: `1`) - Cache validity in seconds
 
+`upgrade_apt_dpkg_options` (default: `force-confdef,force-confold`) - dpkg options passed to apt
+
 ## Dependencies
 
 None.
