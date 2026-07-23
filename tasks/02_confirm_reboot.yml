@@ -1,0 +1,25 @@
+---
+- name: Assume reboot is confirmed by default (non-interactive path)
+  ansible.builtin.set_fact:
+    upgrade_reboot_confirmed: true
+
+- name: Ask operator to confirm reboot (interactive mode only)
+  when:
+    - upgrade_interactive | bool
+    - upgrade_reboot_required | default(false) | bool
+    - upgrade_reboot | bool
+  block:
+    - name: Prompt for reboot confirmation
+      ansible.builtin.pause:
+        prompt: |
+          A reboot is required to apply the installed upgrade on {{ inventory_hostname }}.
+          Reboot now? (yes/no)
+      register: upgrade_reboot_answer
+      become: false
+
+    - name: Record operator's reboot decision
+      ansible.builtin.set_fact:
+        upgrade_reboot_confirmed: "{{ (upgrade_reboot_answer.user_input | default('') | trim | lower) == 'yes' }}"
+      # Anything other than an exact "yes" (no / garbage / empty Enter) resolves
+      # to false -> reboot is skipped. No assert/fail: the play must never abort
+      # because of the answer given here, so later roles are unaffected.

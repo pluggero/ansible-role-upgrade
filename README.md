@@ -14,7 +14,9 @@ Available variables are listed below, along with default values (see `defaults/m
 
 **General:**
 
-`upgrade_reboot` (default: `false`) - Reboot after upgrade
+`upgrade_reboot` (default: `false`) - Reboot after upgrade, only if actually required (not supported on FreeBSD)
+
+`upgrade_interactive` (default: `false`) - Ask for confirmation before rebooting instead of rebooting automatically
 
 **APT (Debian/Ubuntu):**
 
@@ -25,6 +27,14 @@ Available variables are listed below, along with default values (see `defaults/m
 `upgrade_apt_cache_valid_time` (default: `1`) - Cache validity in seconds
 
 `upgrade_apt_dpkg_options` (default: `force-confdef,force-confold`) - dpkg options passed to apt
+
+**Windows:**
+
+`upgrade_windows_update_categories` (default: `[CriticalUpdates, SecurityUpdates, UpdateRollups, DefinitionUpdates]`) - Update categories to install
+
+`upgrade_windows_update_retries` (default: `3`) - Retries for `win_updates`
+
+`upgrade_windows_update_retry_delay` (default: `30`) - Delay in seconds between retries
 
 ## Dependencies
 

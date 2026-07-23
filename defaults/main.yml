@@ -1,5 +1,6 @@
 ---
 upgrade_reboot: false
+upgrade_interactive: false
 
 # APT-specific (Debian/Ubuntu)
 upgrade_apt_autoremove: false

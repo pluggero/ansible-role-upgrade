@@ -56,3 +56,17 @@
       environment:
         DEBIAN_FRONTEND: noninteractive
       become: true
+
+# /var/run/reboot-required is written by the kernel package's postinst hook
+# (via update-notifier-common/unattended-upgrades). On a minimal install
+# without that hook package, this file is never created and reboot-required
+# detection silently stays false even when a reboot is genuinely needed.
+- name: Check Debian/Ubuntu reboot-required flag
+  ansible.builtin.stat:
+    path: /var/run/reboot-required
+  register: upgrade_reboot_required_check
+  become: true
+
+- name: Set reboot-required fact (Debian/Ubuntu)
+  ansible.builtin.set_fact:
+    upgrade_reboot_required: "{{ upgrade_reboot_required_check.stat.exists }}"
