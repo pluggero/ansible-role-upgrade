@@ -11,3 +11,16 @@
   changed_when: false # The pacman module currently does not support cache_valid_time.
   become: true
   notify: Reboot system
+
+# pacman replaces kernel package files in place, so the running kernel's
+# module directory is removed in the same transaction that installs the new
+# kernel — its absence reliably signals a reboot is needed.
+- name: Check if running kernel's module directory still exists (Archlinux)
+  ansible.builtin.stat:
+    path: "/usr/lib/modules/{{ ansible_kernel }}"
+  register: upgrade_reboot_required_check
+  become: true
+
+- name: Set reboot-required fact (Archlinux)
+  ansible.builtin.set_fact:
+    upgrade_reboot_required: "{{ not upgrade_reboot_required_check.stat.exists }}"

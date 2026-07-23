@@ -11,3 +11,16 @@
   changed_when: false # The apk module currently does not support cache_valid_time.
   become: true
   notify: Reboot system
+
+# apk replaces kernel package files in place, so the running kernel's module
+# directory is removed in the same transaction that installs the new kernel —
+# its absence reliably signals a reboot is needed.
+- name: Check if running kernel's module directory still exists (Alpine)
+  ansible.builtin.stat:
+    path: "/lib/modules/{{ ansible_kernel }}"
+  register: upgrade_reboot_required_check
+  become: true
+
+- name: Set reboot-required fact (Alpine)
+  ansible.builtin.set_fact:
+    upgrade_reboot_required: "{{ not upgrade_reboot_required_check.stat.exists }}"

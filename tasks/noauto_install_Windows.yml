@@ -28,13 +28,19 @@
       ansible.windows.win_updates:
         category_names: "{{ upgrade_windows_update_categories }}"
         state: installed
-        reboot: "{{ upgrade_reboot }}"
+        # Reboot decisions are centralized in the role's handler so interactive
+        # confirmation can run first; the module must not reboot on its own.
+        reboot: false
         reboot_timeout: 1200
       register: windows_update_result
       notify: Reboot system
       retries: "{{ upgrade_windows_update_retries }}"
       delay: "{{ upgrade_windows_update_retry_delay }}"
       until: windows_update_result is not failed
+
+    - name: Set reboot-required fact (Windows)
+      ansible.builtin.set_fact:
+        upgrade_reboot_required: "{{ windows_update_result.reboot_required | default(false) }}"
 
 - name: Upgrade Chocolatey packages
   block:

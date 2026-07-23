@@ -10,3 +10,10 @@
     state: latest
   become: true
   notify: Reboot system
+
+# pkg upgrade never touches the running kernel on FreeBSD (kernel upgrades are
+# handled separately via freebsd-update), so there is no reboot-required
+# signal to derive from a pkg upgrade here.
+- name: Set reboot-required fact (FreeBSD - not applicable to pkg upgrades)
+  ansible.builtin.set_fact:
+    upgrade_reboot_required: false

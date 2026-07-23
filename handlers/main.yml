@@ -7,6 +7,8 @@
   become: true
   when:
     - upgrade_reboot
+    - upgrade_reboot_required | default(false)
+    - upgrade_reboot_confirmed | default(true)
     - ansible_os_family != "Windows"
 
 - name: Reboot system
@@ -16,4 +18,6 @@
     reboot_timeout: 1200
   when:
     - upgrade_reboot
+    - upgrade_reboot_required | default(false)
+    - upgrade_reboot_confirmed | default(true)
     - ansible_os_family == "Windows"
