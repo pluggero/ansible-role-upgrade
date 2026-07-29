@@ -4,3 +4,6 @@ skip_list:
 
 exclude_paths:
   - '.github'
+
+mock_modules:
+  - vagrant
