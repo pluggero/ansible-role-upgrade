@@ -1,4 +1,17 @@
 ---
+- name: Reboot system (local connection)
+  ansible.builtin.command: reboot
+  become: true
+  async: 1
+  poll: 0
+  failed_when: false
+  when:
+    - upgrade_reboot
+    - upgrade_reboot_required | default(false)
+    - upgrade_reboot_confirmed | default(true)
+    - ansible_os_family != "Windows"
+    - ansible_connection == "local"
+
 - name: Reboot system
   ansible.builtin.reboot:
     msg: "Rebooting system to apply changes..."
@@ -10,6 +23,7 @@
     - upgrade_reboot_required | default(false)
     - upgrade_reboot_confirmed | default(true)
     - ansible_os_family != "Windows"
+    - ansible_connection != "local"
 
 - name: Reboot system
   ansible.windows.win_reboot:

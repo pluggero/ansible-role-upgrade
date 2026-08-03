@@ -44,7 +44,6 @@
         upgrade: "{{ upgrade_apt_type }}"
         cache_valid_time: "{{ upgrade_apt_cache_valid_time }}"
         dpkg_options: "{{ upgrade_apt_dpkg_options }}"
-      notify: Reboot system
       environment:
         DEBIAN_FRONTEND: noninteractive
       become: true

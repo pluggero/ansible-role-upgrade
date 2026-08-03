@@ -14,9 +14,9 @@ Available variables are listed below, along with default values (see `defaults/m
 
 **General:**
 
-`upgrade_reboot` (default: `false`) - Reboot after upgrade, only if actually required (not supported on FreeBSD)
+`upgrade_reboot` (default: `false`) - Reboot after upgrade, only if actually required (not supported on FreeBSD). The reboot happens immediately after the upgrade step, in the same play, rather than being deferred to the end of the playbook - this avoids later roles/tasks running against a stale, un-rebooted kernel.
 
-`upgrade_interactive` (default: `false`) - Ask for confirmation before rebooting instead of rebooting automatically
+`upgrade_interactive` (default: `false`) - Ask for confirmation before rebooting instead of rebooting automatically. If confirmed, the reboot still happens immediately (not deferred to the end of the playbook).
 
 **APT (Debian/Ubuntu):**
 

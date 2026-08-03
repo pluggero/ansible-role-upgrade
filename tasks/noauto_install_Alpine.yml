@@ -10,7 +10,6 @@
     upgrade: true
   changed_when: false # The apk module currently does not support cache_valid_time.
   become: true
-  notify: Reboot system
 
 # apk replaces kernel package files in place, so the running kernel's module
 # directory is removed in the same transaction that installs the new kernel —
