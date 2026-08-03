@@ -9,7 +9,6 @@
     name: "*"
     state: latest
   become: true
-  notify: Reboot system
 
 # pkg upgrade never touches the running kernel on FreeBSD (kernel upgrades are
 # handled separately via freebsd-update), so there is no reboot-required
