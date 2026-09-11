@@ -1,5 +1,7 @@
 ---
 - name: Check if any packages need upgrading
+  environment:
+    IGNORE_OSVERSION: "yes"
   community.general.pkgng:
     name: "*"
     state: latest
