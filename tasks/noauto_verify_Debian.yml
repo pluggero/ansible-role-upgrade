@@ -60,3 +60,48 @@
     that:
       - dpkg_audit.stdout == ""
     fail_msg: "Found broken packages: {{ dpkg_audit.stdout }}"
+
+- name: Gather package facts for unattended-upgrades check
+  ansible.builtin.package_facts:
+    manager: auto
+
+- name: Assert unattended-upgrades is installed
+  ansible.builtin.assert:
+    that:
+      - "'unattended-upgrades' in ansible_facts.packages"
+    fail_msg: "unattended-upgrades package was not installed"
+
+- name: Read rendered 50unattended-upgrades config
+  ansible.builtin.slurp:
+    src: /etc/apt/apt.conf.d/50unattended-upgrades
+  register: upgrade_unattended_policy_file
+
+- name: Assert 50unattended-upgrades contains expected directives
+  ansible.builtin.assert:
+    that:
+      - "'-security\";' in (upgrade_unattended_policy_file.content | b64decode)"
+      - "'Unattended-Upgrade::Automatic-Reboot \"true\";' in (upgrade_unattended_policy_file.content | b64decode)"
+      - "'Unattended-Upgrade::Automatic-Reboot-Time \"02:00\";' in (upgrade_unattended_policy_file.content | b64decode)"
+    fail_msg: "50unattended-upgrades is missing expected directives"
+
+- name: Read rendered 20auto-upgrades config
+  ansible.builtin.slurp:
+    src: /etc/apt/apt.conf.d/20auto-upgrades
+  register: upgrade_unattended_periodic_file
+
+- name: Assert 20auto-upgrades enables periodic unattended-upgrade
+  ansible.builtin.assert:
+    that:
+      - "'APT::Periodic::Unattended-Upgrade \"1\";' in (upgrade_unattended_periodic_file.content | b64decode)"
+    fail_msg: "20auto-upgrades does not enable APT::Periodic::Unattended-Upgrade"
+
+- name: Check apt-daily-upgrade timer state
+  ansible.builtin.systemd:
+    name: apt-daily-upgrade.timer
+  register: upgrade_unattended_timer_facts
+
+- name: Assert apt-daily-upgrade timer is enabled
+  ansible.builtin.assert:
+    that:
+      - upgrade_unattended_timer_facts.status.UnitFileState == "enabled"
+    fail_msg: "apt-daily-upgrade.timer is not enabled"

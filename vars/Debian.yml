@@ -1,0 +1,8 @@
+---
+upgrade_unattended_dep_pkgs:
+  - unattended-upgrades
+
+# Only installed when upgrade_unattended_mail_to is set — unattended-upgrades'
+# Mail directive silently no-ops without a working mail command.
+upgrade_unattended_mail_dep_pkgs:
+  - mailutils

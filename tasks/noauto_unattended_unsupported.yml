@@ -1,0 +1,6 @@
+---
+- name: Report unattended upgrades not supported on this OS
+  ansible.builtin.debug:
+    msg: >-
+      upgrade_unattended_enabled is true, but unattended upgrades are not
+      implemented for {{ ansible_os_family }} ({{ ansible_distribution }}) - skipping.

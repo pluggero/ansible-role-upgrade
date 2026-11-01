@@ -1,0 +1,16 @@
+// {{ ansible_managed }}
+Unattended-Upgrade::Allowed-Origins {
+{% for origin in upgrade_unattended_origins %}
+    "{{ origin }}";
+{% endfor %}
+};
+
+Unattended-Upgrade::Remove-Unused-Dependencies "{{ upgrade_unattended_remove_unused_dependencies | bool | lower }}";
+
+Unattended-Upgrade::Automatic-Reboot "{{ upgrade_unattended_reboot | bool | lower }}";
+Unattended-Upgrade::Automatic-Reboot-Time "{{ upgrade_unattended_reboot_time }}";
+Unattended-Upgrade::Automatic-Reboot-WithUsers "{{ upgrade_unattended_reboot_with_users | bool | lower }}";
+{% if upgrade_unattended_mail_to | length > 0 %}
+
+Unattended-Upgrade::Mail "{{ upgrade_unattended_mail_to }}";
+{% endif %}

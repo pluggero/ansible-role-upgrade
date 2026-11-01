@@ -18,6 +18,20 @@ Available variables are listed below, along with default values (see `defaults/m
 
 `upgrade_interactive` (default: `false`) - Ask for confirmation before rebooting instead of rebooting automatically. If confirmed, the reboot still happens immediately (not deferred to the end of the playbook).
 
+**Unattended Upgrades (Debian/Ubuntu only):**
+
+Background security patching via `unattended-upgrades`, independent of this role's main upgrade task. No-op on Arch, Alpine, FreeBSD, Windows.
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `upgrade_unattended_enabled` | `false` | Install and configure `unattended-upgrades` |
+| `upgrade_unattended_origins` | `["${distro_id}:${distro_codename}-security"]` | Allowed origins for automatic installation |
+| `upgrade_unattended_remove_unused_dependencies` | `true` | Remove unused dependencies after an unattended upgrade |
+| `upgrade_unattended_mail_to` | `""` | Mail address for upgrade notifications; empty disables mail |
+| `upgrade_unattended_reboot` | `false` | Automatically reboot if required after an unattended upgrade |
+| `upgrade_unattended_reboot_time` | `"02:00"` | Daily time to perform the automatic reboot, if required |
+| `upgrade_unattended_reboot_with_users` | `false` | Reboot even if users are currently logged in |
+
 **APT (Debian/Ubuntu):**
 
 `upgrade_apt_autoremove` (default: `false`) - Run autoremove
@@ -46,6 +60,18 @@ None.
 - hosts: all
   roles:
     - pluggero.upgrade
+```
+
+With unattended upgrades and a scheduled reboot:
+
+```yaml
+- hosts: all
+  roles:
+    - role: pluggero.upgrade
+      vars:
+        upgrade_unattended_enabled: true
+        upgrade_unattended_reboot: true
+        upgrade_unattended_reboot_time: "03:00"
 ```
 
 ## License
