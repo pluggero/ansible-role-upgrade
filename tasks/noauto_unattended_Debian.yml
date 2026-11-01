@@ -1,0 +1,55 @@
+---
+- name: Ensure we are using apt
+  ansible.builtin.fail:
+    msg: "Unattended upgrades are only supported on {{ ansible_os_family }} systems that use apt as a package manager."
+  when: ansible_pkg_mgr != "apt"
+
+- name: Include OS-specific variables
+  ansible.builtin.include_vars: "{{ var_file }}"
+  with_first_found:
+    - "{{ role_path }}/vars/{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
+    - "{{ role_path }}/vars/{{ ansible_os_family }}-{{ ansible_distribution_major_version }}.yml"
+    - "{{ role_path }}/vars/{{ ansible_distribution }}.yml"
+    - "{{ role_path }}/vars/{{ ansible_os_family }}.yml"
+    - "{{ role_path }}/vars/{{ ansible_lsb.id }}.yml"
+  loop_control:
+    loop_var: var_file
+
+- name: Install unattended-upgrades dependencies
+  ansible.builtin.apt:
+    name: "{{ upgrade_unattended_dep_pkgs }}"
+    state: present
+  become: true
+
+- name: Install mail dependencies for unattended-upgrade notifications
+  ansible.builtin.apt:
+    name: "{{ upgrade_unattended_mail_dep_pkgs }}"
+    state: present
+  become: true
+  when: upgrade_unattended_mail_to | length > 0
+
+- name: Configure unattended-upgrades policy
+  ansible.builtin.template:
+    src: 50unattended-upgrades.j2
+    dest: /etc/apt/apt.conf.d/50unattended-upgrades
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+
+- name: Enable periodic apt update and unattended-upgrade
+  ansible.builtin.template:
+    src: 20auto-upgrades.j2
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+
+# Unmasks the timer only; 20auto-upgrades above is what actually enables upgrades.
+- name: Ensure apt-daily-upgrade timer is enabled and running
+  ansible.builtin.systemd:
+    name: apt-daily-upgrade.timer
+    enabled: true
+    state: started
+  become: true

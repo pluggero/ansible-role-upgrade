@@ -2,6 +2,16 @@
 upgrade_reboot: false
 upgrade_interactive: false
 
+# Unattended upgrades (Debian/Ubuntu only)
+upgrade_unattended_enabled: false
+upgrade_unattended_origins:
+  - "${distro_id}:${distro_codename}-security"
+upgrade_unattended_remove_unused_dependencies: true
+upgrade_unattended_mail_to: ""
+upgrade_unattended_reboot: false
+upgrade_unattended_reboot_time: "02:00"
+upgrade_unattended_reboot_with_users: false
+
 # APT-specific (Debian/Ubuntu)
 upgrade_apt_autoremove: false
 upgrade_apt_type: dist
