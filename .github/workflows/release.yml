@@ -31,7 +31,7 @@ jobs:
           python-version: "3.14"
 
       - name: Install Ansible
-        run: pip3 install ansible-core
+        run: pip3 install -r requirements.txt
 
       - name: Trigger a new import on Galaxy
         run: >-

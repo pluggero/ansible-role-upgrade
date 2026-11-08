@@ -1,0 +1,76 @@
+---
+argument_specs:
+  main:
+    short_description: Installs package upgrades on various Linux distributions, FreeBSD, and Windows.
+    description:
+      - Performs a system upgrade, optionally configuring unattended upgrades (Debian/Ubuntu) and rebooting when required.
+    author:
+      - Robin Plugge (@pluggero)
+    options:
+      upgrade_reboot:
+        type: bool
+        default: false
+        description: Reboot after upgrade, only if actually required (not supported on FreeBSD).
+      upgrade_interactive:
+        type: bool
+        default: false
+        description: Ask for confirmation before rebooting instead of rebooting automatically.
+      upgrade_unattended_enabled:
+        type: bool
+        default: false
+        description: Install and configure unattended-upgrades. Debian/Ubuntu only; no-op elsewhere.
+      upgrade_unattended_origins:
+        type: list
+        elements: str
+        default: ["${distro_id}:${distro_codename}-security"]
+        description: Allowed origins for automatic installation.
+      upgrade_unattended_remove_unused_dependencies:
+        type: bool
+        default: true
+        description: Remove unused dependencies after an unattended upgrade.
+      upgrade_unattended_mail_to:
+        type: str
+        default: ""
+        description: Mail address for upgrade notifications. Empty disables mail.
+      upgrade_unattended_reboot:
+        type: bool
+        default: false
+        description: Automatically reboot if required after an unattended upgrade.
+      upgrade_unattended_reboot_time:
+        type: str
+        default: "02:00"
+        description: Daily time to perform the automatic reboot, if required.
+      upgrade_unattended_reboot_with_users:
+        type: bool
+        default: false
+        description: Reboot even if users are currently logged in.
+      upgrade_apt_autoremove:
+        type: bool
+        default: false
+        description: Run autoremove after the apt upgrade.
+      upgrade_apt_type:
+        type: str
+        default: dist
+        choices: ["no", "yes", "safe", "full", "dist"]
+        description: Upgrade type passed to the apt module's upgrade parameter.
+      upgrade_apt_cache_valid_time:
+        type: int
+        default: 1
+        description: Cache validity in seconds.
+      upgrade_apt_dpkg_options:
+        type: str
+        default: "force-confdef,force-confold"
+        description: dpkg options passed to apt.
+      upgrade_windows_update_categories:
+        type: list
+        elements: str
+        default: [CriticalUpdates, SecurityUpdates, UpdateRollups, DefinitionUpdates]
+        description: Windows Update categories to install.
+      upgrade_windows_update_retries:
+        type: int
+        default: 3
+        description: Retries for win_updates.
+      upgrade_windows_update_retry_delay:
+        type: int
+        default: 30
+        description: Delay in seconds between retries.
