@@ -25,11 +25,9 @@
     - ansible_os_family != "Windows"
     - ansible_connection != "local"
 
-- name: Reboot system
-  ansible.windows.win_reboot:
-    msg: "Rebooting system to apply changes..."
-    connect_timeout: 10
-    reboot_timeout: 1200
+# Outsourced to avoid resolving ansible.windows on non-Windows hosts.
+- name: Reboot system (Windows)
+  ansible.builtin.include_tasks: "{{ role_path }}/tasks/noauto_reboot_Windows.yml"
   when:
     - upgrade_reboot
     - upgrade_reboot_required | default(false)
